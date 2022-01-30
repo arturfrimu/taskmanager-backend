@@ -1,0 +1,49 @@
+version: '3.9'
+services:
+  mysqldb:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+      - MYSQL_DATABASE=taskmanager
+    expose:
+      - "3306"
+    ports:
+      - "33061:3306"
+    volumes:
+      - db:/var/lib/taskmanager
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 2s
+      timeout: 30s
+      retries: 5
+  backend:
+    build: .
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    #image: krabek1337/task4back-end_backend:latest
+    environment:
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_FLYWAY_USER=${DB_USERNAME}
+      - SPRING_FLYWAY_PASSWORD=${DB_PASSWORD}
+    restart: on-failure
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+  frontend:
+    image: krabek1337/react-docker:1.0.0-dev
+    ports:
+      - "80:3000"
+    expose:
+      - "3000"
+      #    args:
+      #      REACT_APP_API_BASE_URL: http://127.0.0.1:8080/api
+    depends_on:
+      - backend
+volumes:
+  db:
